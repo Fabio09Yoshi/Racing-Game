@@ -15,12 +15,15 @@ public class CarController : MonoBehaviour
 
     private bool grounded;
 
-    public Transform groundRayPoint;
+    public Transform groundRayPoint, groundRayPoint2;
     public LayerMask groundLayerMask;
     public float groundRayLenghth = 0.75f;
 
     private float dragOnGround;
     public float gravityModifier = 10f;
+
+    public Transform leftFrontWheel, rightFrontWheel;
+    public float maxWheelTurn = 25f;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -52,7 +55,10 @@ public class CarController : MonoBehaviour
             transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f, turnInput * turnStrenght * Time.deltaTime * Mathf.Sign(speedInput) * (rb.linearVelocity.magnitude / maxSpeed), 0f)); 
         }
 
+        //Turning Wheels
 
+        leftFrontWheel.localRotation = Quaternion.Euler(leftFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn) - 180, leftFrontWheel.localRotation.eulerAngles.z);
+        rightFrontWheel.localRotation = Quaternion.Euler(rightFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn), rightFrontWheel.localRotation.eulerAngles.z);
 
         transform.position = rb.position;
     }
@@ -63,10 +69,26 @@ public class CarController : MonoBehaviour
         grounded = false;
 
         RaycastHit hit;
+        Vector3 normalTarget = Vector3.zero;
 
         if (Physics.Raycast(groundRayPoint.position, -transform.up, out hit, groundRayLenghth, groundLayerMask))
         {
             grounded = true;
+
+            normalTarget = hit.normal;
+        }
+        if (Physics.Raycast(groundRayPoint2.position, -transform.up, out hit, groundRayLenghth, groundLayerMask))
+        {
+            grounded = true;
+
+            normalTarget = (normalTarget + hit.normal) / 2f;
+        }
+
+
+        //Quando on ground rotaciona para encontrar o estado normal
+        if (grounded)
+        {
+            transform.rotation = Quaternion.FromToRotation(transform.up, normalTarget) * transform.rotation;
         }
 
         //Accelerates the Car
