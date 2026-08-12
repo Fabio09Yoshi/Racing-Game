@@ -13,10 +13,22 @@ public class CarController : MonoBehaviour
     public float turnStrenght = 180f;
     private float turnInput;
 
+    private bool grounded;
+
+    public Transform groundRayPoint;
+    public LayerMask groundLayerMask;
+    public float groundRayLenghth = 0.75f;
+
+    private float dragOnGround;
+    public float gravityModifier = 10f;
+
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         rb.transform.parent = null;
+
+        dragOnGround = rb.linearDamping;
     }
 
     // Update is called once per frame
@@ -35,9 +47,9 @@ public class CarController : MonoBehaviour
 
         turnInput = Input.GetAxis("Horizontal");
 
-        if (Input.GetAxis("Vertical") != 0)
+        if (grounded && Input.GetAxis("Vertical") != 0)
         {
-            transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f, turnInput * turnStrenght * Time.deltaTime, 0f)); 
+            transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f, turnInput * turnStrenght * Time.deltaTime * Mathf.Sign(speedInput) * (rb.linearVelocity.magnitude / maxSpeed), 0f)); 
         }
 
 
@@ -47,7 +59,38 @@ public class CarController : MonoBehaviour
 
     void FixedUpdate()
     {
-       rb.AddForce(transform.forward * speedInput * 1000f);
+
+        grounded = false;
+
+        RaycastHit hit;
+
+        if (Physics.Raycast(groundRayPoint.position, -transform.up, out hit, groundRayLenghth, groundLayerMask))
+        {
+            grounded = true;
+        }
+
+        //Accelerates the Car
+        if (grounded)
+        {
+            rb.linearDamping = dragOnGround;
+
+            rb.AddForce(transform.forward * speedInput * 1000f);
+        }
+        else
+        {
+            rb.linearDamping = 0.1f;
+
+            rb.AddForce(-Vector3.up * gravityModifier * 100f);
+
+        }
+
+
+        if (rb.linearVelocity.magnitude > maxSpeed)
+        {
+            rb.linearVelocity = rb.linearVelocity.normalized * maxSpeed;
+        }
+
+        Debug.Log(rb.linearVelocity.magnitude);
         
 
     }
