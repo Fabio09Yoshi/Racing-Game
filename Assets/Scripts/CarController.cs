@@ -1,5 +1,6 @@
 using JetBrains.Annotations;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class CarController : MonoBehaviour
 {
@@ -29,34 +30,78 @@ public class CarController : MonoBehaviour
     private int nextCheckpoint;
     public int currentLap;
 
+    public bool isAI;
+
+    public int currentTarget;
+    private Vector3 targetPoint;
+    public float ai_AccelerateSpeed = 1f, ai_TurnSpeed = .8f, ai_ReachPointRange = 5f, ai_PointVariance = 3f, ai_maxTurn = 30;
+    private float ai_speedInput;
+
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         rb.transform.parent = null;
 
         dragOnGround = rb.linearDamping;
+
+        if (isAI)
+        {
+            targetPoint = RaceManager.instance.allCheckpoint[currentTarget].transform.position;
+            RandomiseAITarget();
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        speedInput = 0f;
-        if (Input.GetAxis("Vertical") > 0)
+
+        if (!isAI)
         {
-            speedInput = Input.GetAxis("Vertical") * forwardAcceleration;
+            speedInput = 0f;
+            if (Input.GetAxis("Vertical") > 0)
+            {
+                speedInput = Input.GetAxis("Vertical") * forwardAcceleration;
+            }
+            else if (Input.GetAxis("Vertical") < 0)
+            {
+                speedInput = Input.GetAxis("Vertical") * reverseAcceleration;
+
+            }
+
+            turnInput = Input.GetAxis("Horizontal");
+
+            //if (grounded && Input.GetAxis("Vertical") != 0)
+            //{
+            //    transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f, turnInput * turnStrenght * Time.deltaTime * Mathf.Sign(speedInput) * (rb.linearVelocity.magnitude / maxSpeed), 0f)); 
+            //}
+
         }
-        else if (Input.GetAxis("Vertical") < 0)
+        else
         {
-            speedInput = Input.GetAxis("Vertical") * reverseAcceleration;
+            targetPoint.y = transform.position.y;
 
+            if (Vector3.Distance(transform.position, targetPoint) < ai_ReachPointRange)
+            {
+                SetNextAITarget();
+            }
+
+            Vector3 targetDirection = targetPoint - transform.position;
+
+            float angle = Vector3.SignedAngle(transform.forward,targetDirection,Vector3.up);
+
+            turnInput = Mathf.Clamp(angle / ai_maxTurn, -1f, 1f);
+
+            if (Mathf.Abs(angle) < ai_maxTurn)
+            {
+                ai_speedInput = Mathf.MoveTowards(ai_speedInput, 1f, ai_AccelerateSpeed * Time.deltaTime);
+            }
+            else
+            { 
+                ai_speedInput = Mathf.MoveTowards(ai_speedInput, ai_TurnSpeed, ai_AccelerateSpeed * Time.deltaTime);
+            }
+            speedInput = ai_speedInput * forwardAcceleration;
         }
-
-        turnInput = Input.GetAxis("Horizontal");
-
-        //if (grounded && Input.GetAxis("Vertical") != 0)
-        //{
-        //    transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f, turnInput * turnStrenght * Time.deltaTime * Mathf.Sign(speedInput) * (rb.linearVelocity.magnitude / maxSpeed), 0f)); 
-        //}
 
         //Turning Wheels
 
@@ -119,12 +164,12 @@ public class CarController : MonoBehaviour
 
         transform.position = rb.position;
 
-        if (grounded && Input.GetAxis("Vertical") != 0)
+        if (grounded && Mathf.Abs(speedInput) > 0.01f)
         {
-            transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f, turnInput * turnStrenght * Time.deltaTime * Mathf.Sign(speedInput) * (rb.linearVelocity.magnitude / maxSpeed), 0f));
+            float speedFactor = Mathf.Clamp01(rb.linearVelocity.magnitude / maxSpeed);
+
+            transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f,turnInput * turnStrenght * Time.deltaTime * Mathf.Sign(speedInput) * speedFactor,0f));
         }
-
-
     }
 
     public void CheckpointHit(int checkpointNumber)
@@ -140,5 +185,30 @@ public class CarController : MonoBehaviour
             }
         }
 
+        if (isAI)
+        {
+            if (checkpointNumber == currentTarget)
+            {
+                SetNextAITarget();
+            }
+        }
+    }
+
+    public void SetNextAITarget()
+    {
+        currentTarget++;
+        if (currentTarget >= RaceManager.instance.allCheckpoint.Length)
+        {
+            currentTarget = 0;
+        }
+
+        targetPoint = RaceManager.instance.allCheckpoint[currentTarget].transform.position;
+        RandomiseAITarget();
+    }
+
+
+    public void RandomiseAITarget()
+    {
+        targetPoint += new Vector3(Random.Range(-ai_PointVariance, ai_PointVariance), 0f, Random.Range(-ai_PointVariance, ai_PointVariance));
     }
 }
