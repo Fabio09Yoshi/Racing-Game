@@ -37,7 +37,7 @@ public class CarController : MonoBehaviour
     public float ai_AccelerateSpeed = 1f, ai_TurnSpeed = .8f, ai_ReachPointRange = 5f, ai_PointVariance = 3f, ai_maxTurn = 30;
     private float ai_speedInput;
 
-
+    public float raceTime;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -45,19 +45,30 @@ public class CarController : MonoBehaviour
 
         dragOnGround = rb.linearDamping;
 
+        UIManager.instance.lapCounterText.text = currentLap + "/" + RaceManager.instance.totalLaps;
+
+
         if (isAI)
         {
             targetPoint = RaceManager.instance.allCheckpoint[currentTarget].transform.position;
             RandomiseAITarget();
         }
+
+
     }
 
     // Update is called once per frame
     void Update()
     {
+        raceTime += Time.deltaTime;
+
+
 
         if (!isAI)
         {
+            var ts = System.TimeSpan.FromSeconds(raceTime);
+            UIManager.instance.raceTimerText.text = string.Format("{0:00}:{1:00}:{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds);
+
             speedInput = 0f;
             if (Input.GetAxis("Vertical") > 0)
             {
@@ -181,7 +192,7 @@ public class CarController : MonoBehaviour
             if (nextCheckpoint == RaceManager.instance.allCheckpoint.Length)
             { 
                 nextCheckpoint = 0;
-                currentLap++;
+                LapCompleted();
             }
         }
 
@@ -210,5 +221,14 @@ public class CarController : MonoBehaviour
     public void RandomiseAITarget()
     {
         targetPoint += new Vector3(Random.Range(-ai_PointVariance, ai_PointVariance), 0f, Random.Range(-ai_PointVariance, ai_PointVariance));
+    }
+
+
+    public void LapCompleted()
+    {
+
+        currentLap++;
+
+        UIManager.instance.lapCounterText.text = currentLap + "/" + RaceManager.instance.totalLaps;
     }
 }

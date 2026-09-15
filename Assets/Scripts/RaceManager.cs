@@ -7,7 +7,7 @@ public class RaceManager : MonoBehaviour
 
     public Checkpoints[] allCheckpoint;
 
-
+    public int totalLaps;
     private void Awake()
     {
         instance = this;
