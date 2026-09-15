@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using UnityEngine;
 
 public class CarController : MonoBehaviour
@@ -25,6 +26,8 @@ public class CarController : MonoBehaviour
     public Transform leftFrontWheel, rightFrontWheel;
     public float maxWheelTurn = 25f;
 
+    private int nextCheckpoint;
+    public int currentLap;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -112,7 +115,7 @@ public class CarController : MonoBehaviour
             rb.linearVelocity = rb.linearVelocity.normalized * maxSpeed;
         }
 
-        Debug.Log(rb.linearVelocity.magnitude);
+        //Debug.Log(rb.linearVelocity.magnitude);
 
         transform.position = rb.position;
 
@@ -121,6 +124,21 @@ public class CarController : MonoBehaviour
             transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f, turnInput * turnStrenght * Time.deltaTime * Mathf.Sign(speedInput) * (rb.linearVelocity.magnitude / maxSpeed), 0f));
         }
 
+
+    }
+
+    public void CheckpointHit(int checkpointNumber)
+    {
+        if (checkpointNumber == nextCheckpoint)
+        {
+            nextCheckpoint++;
+
+            if (nextCheckpoint == RaceManager.instance.allCheckpoint.Length)
+            { 
+                nextCheckpoint = 0;
+                currentLap++;
+            }
+        }
 
     }
 }
