@@ -60,14 +60,16 @@ public class CarController : MonoBehaviour
 
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if (RaceManager.instance != null && RaceManager.instance.currentState != RaceManager.RaceState.Racing)
+        bool isGameActive = RaceManager.instance.currentState == RaceManager.RaceState.Racing ||
+                           RaceManager.instance.currentState == RaceManager.RaceState.Finished;
+
+        if (RaceManager.instance != null && !isGameActive)
         {
             speedInput = 0f;
             turnInput = 0f;
-            return; 
+            return;
         }
 
         raceTime += Time.deltaTime;
@@ -94,6 +96,7 @@ public class CarController : MonoBehaviour
         }
         else
         {
+            // Lógica de pilotagem da IA (roda tanto para os bots quanto para o jogador ao terminar)
             targetPoint.y = transform.position.y;
 
             if (Vector3.Distance(transform.position, targetPoint) < ai_ReachPointRange)
@@ -118,7 +121,7 @@ public class CarController : MonoBehaviour
             speedInput = ai_speedInput * forwardAcceleration * ai_speedMod;
         }
 
-        // Turning Wheels
+        // Rotacionar rodas
         leftFrontWheel.localRotation = Quaternion.Euler(leftFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn) - 180, leftFrontWheel.localRotation.eulerAngles.z);
         rightFrontWheel.localRotation = Quaternion.Euler(rightFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn), rightFrontWheel.localRotation.eulerAngles.z);
     }
@@ -228,6 +231,17 @@ public class CarController : MonoBehaviour
 
     public void LapCompleted()
     {
+        if (currentLap >= RaceManager.instance.totalLaps)
+        {
+            currentLap = RaceManager.instance.totalLaps; 
+
+            if (!isAI)
+            {
+                UIManager.instance.lapCounterText.text = currentLap + "/" + RaceManager.instance.totalLaps;
+                FinishRaceForPlayer();
+            }
+            return;
+        }
 
         currentLap++;
 
@@ -235,17 +249,12 @@ public class CarController : MonoBehaviour
         {
             UIManager.instance.lapCounterText.text = currentLap + "/" + RaceManager.instance.totalLaps;
 
+            // Entrou na última volta
             if (currentLap == RaceManager.instance.totalLaps)
             {
                 RaceManager.instance.StartShowUIFinalLap();
-
-            }
-            else if (currentLap > RaceManager.instance.totalLaps)
-            {
-                Debug.Log("ACABOU A CORRIDA!");
             }
         }
-
     }
     public int RaceProgress
     {
@@ -253,6 +262,20 @@ public class CarController : MonoBehaviour
         {
             return currentLap * RaceManager.instance.allCheckpoint.Length + nextCheckpoint;
         }
+    }
+
+    private void FinishRaceForPlayer()
+    {
+        isAI = true; 
+
+
+        currentTarget = nextCheckpoint;
+        targetPoint = RaceManager.instance.allCheckpoint[currentTarget].transform.position;
+        RandomiseAITarget();
+
+        ai_speedMod = 1f;
+
+        RaceManager.instance.FinishedTheRace();
     }
 
 }

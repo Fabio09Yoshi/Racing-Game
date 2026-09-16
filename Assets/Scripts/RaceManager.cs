@@ -7,7 +7,7 @@ public class RaceManager : MonoBehaviour
 {
     public static RaceManager instance;
 
-    public enum RaceState { Waiting, Countdown, Racing, FinalLap, Finished }
+    public enum RaceState { Waiting, Countdown, Racing, Finished}
 
     public RaceState currentState = RaceState.Waiting;
 
@@ -111,18 +111,30 @@ public class RaceManager : MonoBehaviour
             UIManager.instance.finalLapText.gameObject.SetActive(false);
         }
 
+        if (UIManager.instance.finishedText != null)
+        {
+            UIManager.instance.finishedText.gameObject.SetActive(false);
+        }
+
     }
 
     public void StartShowUIFinalLap()
     {
-        if (currentState == RaceState.FinalLap || currentState == RaceState.Finished) return;
+        if (currentState == RaceState.Finished) return;
 
         StartCoroutine(ShowUIFinalLap());
     }
 
+    public void FinishedTheRace()
+    {
+        if (currentState == RaceState.Finished) return;
+
+        currentState = RaceState.Finished;
+        UIManager.instance.finishedText.gameObject.SetActive(true);          
+    }
+
     public IEnumerator ShowUIFinalLap()
     {
-        currentState = RaceState.FinalLap;
 
         if (UIManager.instance.finalLapText != null)
         {
@@ -139,9 +151,7 @@ public class RaceManager : MonoBehaviour
         {
             UIManager.instance.finalLapText.gameObject.SetActive(false);
         }
-
-        currentState = RaceState.Racing;
-
-
     }
+
+
 }
