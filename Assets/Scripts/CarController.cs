@@ -62,69 +62,75 @@ public class CarController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        raceTime += Time.deltaTime;
-
-
-
-        if (!isAI)
+        if (!RaceManager.instance.isStarting)
         {
-            var ts = System.TimeSpan.FromSeconds(raceTime);
-            UIManager.instance.raceTimerText.text = string.Format("{0:00}:{1:00}:{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds);
+            raceTime += Time.deltaTime;
 
-            int position = RacePositionManager.instance.GetPlayerPosition();
-            UIManager.instance.positionText.text = RacePositionManager.instance.GetPlayerOrdinalPosition();
-
-            speedInput = 0f;
-            if (Input.GetAxis("Vertical") > 0)
+            if (!isAI)
             {
-                speedInput = Input.GetAxis("Vertical") * forwardAcceleration;
-            }
-            else if (Input.GetAxis("Vertical") < 0)
-            {
-                speedInput = Input.GetAxis("Vertical") * reverseAcceleration;
+                var ts = System.TimeSpan.FromSeconds(raceTime);
+                UIManager.instance.raceTimerText.text = string.Format("{0:00}:{1:00}:{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds);
 
-            }
+                int position = RacePositionManager.instance.GetPlayerPosition();
+                UIManager.instance.positionText.text = RacePositionManager.instance.GetPlayerOrdinalPosition();
 
-            turnInput = Input.GetAxis("Horizontal");
+                //Segunda opção caso queira o número total de carros ao invés de número ordinal.
+                //UIManager.instance.positionText.text = position + "/" + RacePositionManager.instance.allCars.Length;
 
-            //if (grounded && Input.GetAxis("Vertical") != 0)
-            //{
-            //    transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f, turnInput * turnStrenght * Time.deltaTime * Mathf.Sign(speedInput) * (rb.linearVelocity.magnitude / maxSpeed), 0f)); 
-            //}
 
-        }
-        else
-        {
-            targetPoint.y = transform.position.y;
+                speedInput = 0f;
+                if (Input.GetAxis("Vertical") > 0)
+                {
+                    speedInput = Input.GetAxis("Vertical") * forwardAcceleration;
+                }
+                else if (Input.GetAxis("Vertical") < 0)
+                {
+                    speedInput = Input.GetAxis("Vertical") * reverseAcceleration;
 
-            if (Vector3.Distance(transform.position, targetPoint) < ai_ReachPointRange)
-            {
-                SetNextAITarget();
-            }
+                }
 
-            Vector3 targetDirection = targetPoint - transform.position;
+                turnInput = Input.GetAxis("Horizontal");
 
-            float angle = Vector3.SignedAngle(transform.forward,targetDirection,Vector3.up);
+                //if (grounded && Input.GetAxis("Vertical") != 0)
+                //{
+                //    transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f, turnInput * turnStrenght * Time.deltaTime * Mathf.Sign(speedInput) * (rb.linearVelocity.magnitude / maxSpeed), 0f)); 
+                //}
 
-            turnInput = Mathf.Clamp(angle / ai_maxTurn, -1f, 1f);
-
-            if (Mathf.Abs(angle) < ai_maxTurn)
-            {
-                ai_speedInput = Mathf.MoveTowards(ai_speedInput, 1f, ai_AccelerateSpeed * Time.deltaTime);
             }
             else
-            { 
-                ai_speedInput = Mathf.MoveTowards(ai_speedInput, ai_TurnSpeed, ai_AccelerateSpeed * Time.deltaTime);
+            {
+                targetPoint.y = transform.position.y;
+
+                if (Vector3.Distance(transform.position, targetPoint) < ai_ReachPointRange)
+                {
+                    SetNextAITarget();
+                }
+
+                Vector3 targetDirection = targetPoint - transform.position;
+
+                float angle = Vector3.SignedAngle(transform.forward, targetDirection, Vector3.up);
+
+                turnInput = Mathf.Clamp(angle / ai_maxTurn, -1f, 1f);
+
+                if (Mathf.Abs(angle) < ai_maxTurn)
+                {
+                    ai_speedInput = Mathf.MoveTowards(ai_speedInput, 1f, ai_AccelerateSpeed * Time.deltaTime);
+                }
+                else
+                {
+                    ai_speedInput = Mathf.MoveTowards(ai_speedInput, ai_TurnSpeed, ai_AccelerateSpeed * Time.deltaTime);
+                }
+                speedInput = ai_speedInput * forwardAcceleration * ai_speedMod;
             }
-            speedInput = ai_speedInput * forwardAcceleration * ai_speedMod;
+
+            //Turning Wheels
+
+            leftFrontWheel.localRotation = Quaternion.Euler(leftFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn) - 180, leftFrontWheel.localRotation.eulerAngles.z);
+            rightFrontWheel.localRotation = Quaternion.Euler(rightFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn), rightFrontWheel.localRotation.eulerAngles.z);
+
+            // transform.position = rb.position;
+
         }
-
-        //Turning Wheels
-
-        leftFrontWheel.localRotation = Quaternion.Euler(leftFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn) - 180, leftFrontWheel.localRotation.eulerAngles.z);
-        rightFrontWheel.localRotation = Quaternion.Euler(rightFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn), rightFrontWheel.localRotation.eulerAngles.z);
-
-        // transform.position = rb.position;
     }
 
     void FixedUpdate()
@@ -190,7 +196,7 @@ public class CarController : MonoBehaviour
 
     public void CheckpointHit(int checkpointNumber)
     {
-        Debug.Log(gameObject.name + " | Checkpoint: " + checkpointNumber + " | Esperando: " + nextCheckpoint);
+       //Debug.Log(gameObject.name + " | Checkpoint: " + checkpointNumber + " | Esperando: " + nextCheckpoint);
         if (checkpointNumber == nextCheckpoint)
         {
             nextCheckpoint++;

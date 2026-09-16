@@ -8,6 +8,12 @@ public class RaceManager : MonoBehaviour
     public Checkpoints[] allCheckpoint;
 
     public int totalLaps;
+
+    public bool isStarting;
+    public float timeBetweenStartCount = 1f;
+    private float startCounter;
+    public int countdownCurrent = 3;
+
     private void Awake()
     {
         instance = this;
@@ -20,11 +26,28 @@ public class RaceManager : MonoBehaviour
         {
             allCheckpoint[i].checkpointNumber = i;
         }
+
+        isStarting = true;
+        startCounter = timeBetweenStartCount;
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (isStarting)
+        {
+            startCounter -= Time.deltaTime;
+            if (startCounter < 0)
+            {
+                countdownCurrent--;
+                startCounter = timeBetweenStartCount;
+
+                if (countdownCurrent == 0)
+                {
+                    isStarting = false;
+                }
+            }
+        }
         
     }
 }
