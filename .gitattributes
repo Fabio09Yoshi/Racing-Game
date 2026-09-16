@@ -20,7 +20,7 @@
 *.cs                    text diff=csharp linguist-language=C#
 *.hlsl                  text linguist-language=hlsl
 *.raytrace              text linguist-language=hlsl
-*.shader                text
+*.shader                text linguist-generated
 
 # Unity JSON files
 *.asmdef                unity-json

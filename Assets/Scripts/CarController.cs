@@ -27,7 +27,7 @@ public class CarController : MonoBehaviour
     public Transform leftFrontWheel, rightFrontWheel;
     public float maxWheelTurn = 25f;
 
-    private int nextCheckpoint;
+    public int nextCheckpoint;
     public int currentLap;
 
     public bool isAI;
@@ -35,7 +35,7 @@ public class CarController : MonoBehaviour
     public int currentTarget;
     private Vector3 targetPoint;
     public float ai_AccelerateSpeed = 1f, ai_TurnSpeed = .8f, ai_ReachPointRange = 5f, ai_PointVariance = 3f, ai_maxTurn = 30;
-    private float ai_speedInput;
+    private float ai_speedInput, ai_speedMod;
 
     public float raceTime;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -52,6 +52,8 @@ public class CarController : MonoBehaviour
         {
             targetPoint = RaceManager.instance.allCheckpoint[currentTarget].transform.position;
             RandomiseAITarget();
+
+            ai_speedMod = Random.Range(1, 1.5f);
         }
 
 
@@ -68,6 +70,9 @@ public class CarController : MonoBehaviour
         {
             var ts = System.TimeSpan.FromSeconds(raceTime);
             UIManager.instance.raceTimerText.text = string.Format("{0:00}:{1:00}:{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds);
+
+            int position = RacePositionManager.instance.GetPlayerPosition();
+            UIManager.instance.positionText.text = RacePositionManager.instance.GetPlayerOrdinalPosition();
 
             speedInput = 0f;
             if (Input.GetAxis("Vertical") > 0)
@@ -111,7 +116,7 @@ public class CarController : MonoBehaviour
             { 
                 ai_speedInput = Mathf.MoveTowards(ai_speedInput, ai_TurnSpeed, ai_AccelerateSpeed * Time.deltaTime);
             }
-            speedInput = ai_speedInput * forwardAcceleration;
+            speedInput = ai_speedInput * forwardAcceleration * ai_speedMod;
         }
 
         //Turning Wheels
@@ -185,6 +190,7 @@ public class CarController : MonoBehaviour
 
     public void CheckpointHit(int checkpointNumber)
     {
+        Debug.Log(gameObject.name + " | Checkpoint: " + checkpointNumber + " | Esperando: " + nextCheckpoint);
         if (checkpointNumber == nextCheckpoint)
         {
             nextCheckpoint++;
@@ -231,4 +237,12 @@ public class CarController : MonoBehaviour
 
         UIManager.instance.lapCounterText.text = currentLap + "/" + RaceManager.instance.totalLaps;
     }
+    public int RaceProgress
+    {
+        get
+        {
+            return currentLap * RaceManager.instance.allCheckpoint.Length + nextCheckpoint;
+        }
+    }
+
 }

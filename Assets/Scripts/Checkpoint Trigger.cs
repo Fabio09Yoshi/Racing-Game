@@ -8,9 +8,11 @@ public class CheckpointTrigger : MonoBehaviour
     {
         if (other.tag == "Checkpoint")
         {
-            Debug.Log("Hit Checkpoint Number: " + other.GetComponent<Checkpoints>().checkpointNumber);
+            //Debug.Log("Hit Checkpoint Number: " + other.GetComponent<Checkpoints>().checkpointNumber);
 
             carCtrl.CheckpointHit(other.GetComponent<Checkpoints>().checkpointNumber);
+
+            
         }
     }
 }

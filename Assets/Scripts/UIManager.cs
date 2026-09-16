@@ -7,7 +7,7 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager instance;
 
-    public TMP_Text raceTimerText, lapCounterText;
+    public TMP_Text raceTimerText, lapCounterText, positionText;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
