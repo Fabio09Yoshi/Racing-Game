@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -62,75 +63,64 @@ public class CarController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!RaceManager.instance.isStarting)
+        if (RaceManager.instance != null && RaceManager.instance.currentState != RaceManager.RaceState.Racing)
         {
-            raceTime += Time.deltaTime;
+            speedInput = 0f;
+            turnInput = 0f;
+            return; 
+        }
 
-            if (!isAI)
+        raceTime += Time.deltaTime;
+
+        if (!isAI)
+        {
+            var ts = System.TimeSpan.FromSeconds(raceTime);
+            UIManager.instance.raceTimerText.text = string.Format("{0:00}:{1:00}:{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds);
+
+            int position = RacePositionManager.instance.GetPlayerPosition();
+            UIManager.instance.positionText.text = RacePositionManager.instance.GetPlayerOrdinalPosition();
+
+            speedInput = 0f;
+            if (Input.GetAxis("Vertical") > 0)
             {
-                var ts = System.TimeSpan.FromSeconds(raceTime);
-                UIManager.instance.raceTimerText.text = string.Format("{0:00}:{1:00}:{2:000}", ts.Minutes, ts.Seconds, ts.Milliseconds);
+                speedInput = Input.GetAxis("Vertical") * forwardAcceleration;
+            }
+            else if (Input.GetAxis("Vertical") < 0)
+            {
+                speedInput = Input.GetAxis("Vertical") * reverseAcceleration;
+            }
 
-                int position = RacePositionManager.instance.GetPlayerPosition();
-                UIManager.instance.positionText.text = RacePositionManager.instance.GetPlayerOrdinalPosition();
+            turnInput = Input.GetAxis("Horizontal");
+        }
+        else
+        {
+            targetPoint.y = transform.position.y;
 
-                //Segunda opção caso queira o número total de carros ao invés de número ordinal.
-                //UIManager.instance.positionText.text = position + "/" + RacePositionManager.instance.allCars.Length;
+            if (Vector3.Distance(transform.position, targetPoint) < ai_ReachPointRange)
+            {
+                SetNextAITarget();
+            }
 
+            Vector3 targetDirection = targetPoint - transform.position;
 
-                speedInput = 0f;
-                if (Input.GetAxis("Vertical") > 0)
-                {
-                    speedInput = Input.GetAxis("Vertical") * forwardAcceleration;
-                }
-                else if (Input.GetAxis("Vertical") < 0)
-                {
-                    speedInput = Input.GetAxis("Vertical") * reverseAcceleration;
+            float angle = Vector3.SignedAngle(transform.forward, targetDirection, Vector3.up);
 
-                }
+            turnInput = Mathf.Clamp(angle / ai_maxTurn, -1f, 1f);
 
-                turnInput = Input.GetAxis("Horizontal");
-
-                //if (grounded && Input.GetAxis("Vertical") != 0)
-                //{
-                //    transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f, turnInput * turnStrenght * Time.deltaTime * Mathf.Sign(speedInput) * (rb.linearVelocity.magnitude / maxSpeed), 0f)); 
-                //}
-
+            if (Mathf.Abs(angle) < ai_maxTurn)
+            {
+                ai_speedInput = Mathf.MoveTowards(ai_speedInput, 1f, ai_AccelerateSpeed * Time.deltaTime);
             }
             else
             {
-                targetPoint.y = transform.position.y;
-
-                if (Vector3.Distance(transform.position, targetPoint) < ai_ReachPointRange)
-                {
-                    SetNextAITarget();
-                }
-
-                Vector3 targetDirection = targetPoint - transform.position;
-
-                float angle = Vector3.SignedAngle(transform.forward, targetDirection, Vector3.up);
-
-                turnInput = Mathf.Clamp(angle / ai_maxTurn, -1f, 1f);
-
-                if (Mathf.Abs(angle) < ai_maxTurn)
-                {
-                    ai_speedInput = Mathf.MoveTowards(ai_speedInput, 1f, ai_AccelerateSpeed * Time.deltaTime);
-                }
-                else
-                {
-                    ai_speedInput = Mathf.MoveTowards(ai_speedInput, ai_TurnSpeed, ai_AccelerateSpeed * Time.deltaTime);
-                }
-                speedInput = ai_speedInput * forwardAcceleration * ai_speedMod;
+                ai_speedInput = Mathf.MoveTowards(ai_speedInput, ai_TurnSpeed, ai_AccelerateSpeed * Time.deltaTime);
             }
-
-            //Turning Wheels
-
-            leftFrontWheel.localRotation = Quaternion.Euler(leftFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn) - 180, leftFrontWheel.localRotation.eulerAngles.z);
-            rightFrontWheel.localRotation = Quaternion.Euler(rightFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn), rightFrontWheel.localRotation.eulerAngles.z);
-
-            // transform.position = rb.position;
-
+            speedInput = ai_speedInput * forwardAcceleration * ai_speedMod;
         }
+
+        // Turning Wheels
+        leftFrontWheel.localRotation = Quaternion.Euler(leftFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn) - 180, leftFrontWheel.localRotation.eulerAngles.z);
+        rightFrontWheel.localRotation = Quaternion.Euler(rightFrontWheel.localRotation.eulerAngles.x, (turnInput * maxWheelTurn), rightFrontWheel.localRotation.eulerAngles.z);
     }
 
     void FixedUpdate()
@@ -241,7 +231,21 @@ public class CarController : MonoBehaviour
 
         currentLap++;
 
-        UIManager.instance.lapCounterText.text = currentLap + "/" + RaceManager.instance.totalLaps;
+        if (!isAI)
+        {
+            UIManager.instance.lapCounterText.text = currentLap + "/" + RaceManager.instance.totalLaps;
+
+            if (currentLap == RaceManager.instance.totalLaps)
+            {
+                RaceManager.instance.StartShowUIFinalLap();
+
+            }
+            else if (currentLap > RaceManager.instance.totalLaps)
+            {
+                Debug.Log("ACABOU A CORRIDA!");
+            }
+        }
+
     }
     public int RaceProgress
     {
